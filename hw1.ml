@@ -1,8 +1,8 @@
 (*Returns true iff a is a subset of b, and false otherwise*)
 let rec subset a b = 
-  if List.length a = 0 then true 
-  else if List.exists (fun x -> x=(List.hd a)) b then subset (List.tl a) b 
-      else false;;
+  match a with
+  | [] -> true
+  | h::t -> List.exists (fun x -> x=h) b && subset t b;;
 (* Returns true if two SORTED, UNIQUE lists are equivelant*)
 let rec e_s_u a b = 
   if List.length a <> List.length b then false 
@@ -13,21 +13,22 @@ let equal_sets a b =
   e_s_u (List.sort_uniq (fun x y -> x-y) a) (List.sort_uniq (fun x y -> x-y) b);;
 
 (* Joins two lists (including repeats) *)
-let set_union a b =
-  List.append a b;;
+let set_union a b = a @ b;;
 
 (* Give the intersection of two lists *)
 let rec set_intersection a b = 
-  if List.length a = 0 then [] 
-  else if List.exists (fun x -> x=(List.hd a)) b then List.cons (List.hd a) (set_intersection (List.tl a) b)
-        else set_intersection (List.tl a) b;;
+  match a with
+  | [] -> []
+  | h::t -> if List.exists (fun x -> x=h) b then h::set_intersection t b else set_intersection t b;;
 
+(* Give the difference of two lists, eg all elements in a that don't appear in b *)
 let rec set_diff a b = 
-  if List.length a = 0 then []
-  else if List.exists (fun x -> x=(List.hd a)) b then set_diff (List.tl a) b 
-    else List.cons (List.hd a) (set_diff (List.tl a) b);;
+  match a with
+  | [] -> []
+  | h::t -> if List.exists(fun x -> x=h) b then set_diff t b else h::set_diff t b;;
 
+(* Return the fixed point of a function if one exists, and otherwise loop (forever...) *)
 let rec computed_fixed_point eq f x = 
   if eq (f x) x then x else computed_fixed_point eq f (f x);;
 
-
+(*let rec filter_reachable g =*)
