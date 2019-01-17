@@ -1,3 +1,7 @@
+type ('nonterminal, 'terminal) symbol = N of 'nonterminal | T of 'terminal ;;
+(*I guess this is necessary??*)
+
+
 (*Returns true iff a is a subset of b, and false otherwise*)
 let rec subset a b = 
   match a with
@@ -31,4 +35,31 @@ let rec set_diff a b =
 let rec computed_fixed_point eq f x = 
   if eq (f x) x then x else computed_fixed_point eq f (f x);;
 
-(*let rec filter_reachable g =*)
+
+
+
+let rec follow_individual lis = 
+match lis with
+| [] -> []
+| h::t -> match h with
+          | N(n) -> n::follow_individual t
+          | T(n) -> follow_individual t;;
+
+let rec access_rules g = 
+  match g with
+  | s,[] -> [] (*Empty set of rules passed in *)
+  | s,h::t -> match h with (* h type of TYPE, List *)
+              | ty, [] -> if ty = s then ty::access_rules (s,t) else access_rules(s,t)
+              | ty, r1::rn -> if ty = s then ty::access_rules(s,t) @ follow_individual (r1::rn) else access_rules(s,t);;
+
+(* Builds the rules back from an accumulated reachable-rules list *)
+let rec build_list rules a =
+  match a with
+  | [] -> []
+  | h::t -> match h with
+            | ty, _ -> if List.exists (fun x -> x=ty) rules then h::build_list rules t else build_list rules t;; 
+
+let filter_reachable g = 
+  match g with
+  | s,[] -> s,[]
+  | s,a::f -> s,build_list (access_rules g) (a::f);;
