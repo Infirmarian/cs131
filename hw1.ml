@@ -9,12 +9,14 @@ let rec subset a b =
   | h::t -> List.exists (fun x -> x=h) b && subset t b;;
 (* Returns true if two SORTED, UNIQUE lists are equivelant*)
 let rec e_s_u a b = 
-  if List.length a <> List.length b then false 
-  else if List.length a = 0 && List.length b = 0 then true
-  else if List.hd a = List.hd b then e_s_u (List.tl a) (List.tl b) else false;;
+  match (a,b) with
+  | [],[] -> true
+  | [],_ -> false
+  | _,[] -> false
+  | h::t,h1::t1 -> if h=h1 then e_s_u t t1 else false;;
 (*Returns true if two sets are equal, including duplicates, and false otherwise *)
 let equal_sets a b =
-  e_s_u (List.sort_uniq (fun x y -> x-y) a) (List.sort_uniq (fun x y -> x-y) b);;
+  e_s_u (List.sort_uniq compare a) (List.sort_uniq compare b);;
 
 (* Joins two lists (including repeats) *)
 let set_union a b = a @ b;;
@@ -52,6 +54,14 @@ let rec access_rules g =
               | ty, [] -> if ty = s then ty::access_rules (s,t) else access_rules(s,t)
               | ty, r1::rn -> if ty = s then ty::access_rules(s,t) @ follow_individual (r1::rn) else access_rules(s,t);;
 
+let rec getem lis g = 
+  match lis with
+  | [] -> []
+  | h::t -> access_rules (h,g) @ getem t g;;
+
+let rec bigboy og g =
+  if equal_sets og (getem og g) then og else bigboy (getem og g) g;;
+
 (* Builds the rules back from an accumulated reachable-rules list *)
 let rec build_list rules a =
   match a with
@@ -62,4 +72,4 @@ let rec build_list rules a =
 let filter_reachable g = 
   match g with
   | s,[] -> s,[]
-  | s,a::f -> s,build_list (access_rules g) (a::f);;
+  | s,a::f -> s,build_list (bigboy [s] (a::f)) (a::f);;

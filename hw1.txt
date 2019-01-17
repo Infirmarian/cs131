@@ -1,0 +1,14 @@
+In order to solve the problems in homework 1, I used a fairly standard approach of pattern matching.
+Most problems included a List representing a set, and to analyze the list recursively, the pattern 
+match | [] -> statement1 | h::t -> statement2 was used extensively. For the portion finding grammars,
+the route I took was fairly convoluted. My methodology first gathered the types that could be accessed,
+and then built a list from the original grammar based on the generated accessible types. The primary function,
+access_rules would build a set of rules from the first and second accessible rules (eg starting with the
+top level rule and finding all matching and one leve deeper rules that were non-terminal). This function was
+called by another, getem, which would take a list and grammar set and recursively call access_rules for each
+item in the list. Finally, this was wrapped by a function bigboy, which would recursively call getem until
+the returned value from getem was equal to the current value held by bigboy (using the equal_sets function to compare).
+This list of types was then used to filter out the origial grammar structure, therefore preserving order. 
+One downside to this method is how convoluted it is, and given more time, I believe I could optimize and
+simplify the program. In addition, I believe that a more through set of test-cases would be helpful in 
+checking the functionality of the program.

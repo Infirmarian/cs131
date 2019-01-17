@@ -65,3 +65,18 @@ let my_computed_fixed_point_test0 = computed_fixed_point (=) (fun x -> x) 10 = 1
 let my_computed_fixed_point_test1 = computed_fixed_point (=) (fun x -> x/2) 1000 = 0
 let my_computed_fixed_point_test2 = computed_fixed_point (=) (fun x -> x *. 2.) 1000. = infinity
 let my_computed_fixed_point_test3 = computed_fixed_point (=) sqrt 9999. = 1.
+
+type extype = |S |A |B |C
+let extype_rules = [
+  S, [N A; N B;];
+  A, [N A; T "a"];
+  B, [N B; T "b"; N C];
+  C, [T"c"]
+]
+let extype_gram = S, extype_rules
+
+let my_filter_reachable_test0 = filter_reachable extype_gram = extype_gram
+let my_filter_reachable_test1 = filter_reachable (A,extype_rules) = (A, [A, [N A; T "a"];])
+let my_filter_reachable_test2 = filter_reachable (C,extype_rules) = (C, [C, [T "c"];])
+let my_filter_reachable_test3 = filter_reachable (B,extype_rules) = (B, [B, [N B; T "b"; N C]; C, [T"c"]])
+
