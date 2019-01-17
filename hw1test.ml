@@ -80,3 +80,12 @@ let my_filter_reachable_test1 = filter_reachable (A,extype_rules) = (A, [A, [N A
 let my_filter_reachable_test2 = filter_reachable (C,extype_rules) = (C, [C, [T "c"];])
 let my_filter_reachable_test3 = filter_reachable (B,extype_rules) = (B, [B, [N B; T "b"; N C]; C, [T"c"]])
 
+let deep_rules = [
+  S, [N A];
+  A, [N B];
+  B, [N C];
+  C, [N C]
+]
+let my_filter_reachable_test4 = filter_reachable (S,deep_rules) = (S,deep_rules)
+let my_filter_reachable_test5 = filter_reachable (C,deep_rules) = (C,[C, [N C]])
+let my_filter_reachable_test6 = filter_reachable (A,[]) = (A,[])

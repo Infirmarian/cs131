@@ -1,6 +1,4 @@
 type ('nonterminal, 'terminal) symbol = N of 'nonterminal | T of 'terminal ;;
-(*I guess this is necessary??*)
-
 
 (*Returns true iff a is a subset of b, and false otherwise*)
 let rec subset a b = 
