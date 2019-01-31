@@ -31,35 +31,39 @@ let rec parse_tree_leaves tree =
                                             | Node (no,br) -> (parse_tree_leaves (Node(no,br)))@(helper t)) in helper c
 
 
-let rec mmm gram frag0 = 
-match gram with root,rules -> 
-	match (rules root) with 
-	| [] -> false
-	| h::t -> (match h with 
-		| [] -> false 
-		| r1::rn -> let rec matchboi hd tl = 
-			(match hd with 
-			| N non -> mmm (non,rules) frag0
-			| T term -> (term = frag0) || (match tl with [] -> false | ra::rb -> matchboi ra rb)) in matchboi r1 rn);;
+let rec make_matcher gram acc frag = 
+	match gram with e,f -> let tail = match_sub f (f e) acc frag in tail
 
-
-let rec make_matcher gram frag = 
-	match gram with e,f -> let tail = match_sub f (f e) frag in tail
-
-and match_sub rules li frag = 
-	match li with a::b -> let cv = match_list rules a frag in (match cv with | None -> match_sub rules b frag | Some x -> Some x)
+and match_sub rules li acc frag = 
+	match li with a::b -> let cv = match_list rules a acc frag in (match cv with 
+                                                                | None -> match_sub rules b acc frag 
+                                                                | Some x -> (match acc x with Some x -> Some x | None -> match_sub rules b acc frag ))
 				| [] -> None
 
-and match_list rules list frag =
+and match_list rules list acc frag =
 	match frag with 
 		| first::last -> (
-		match list with | h::t -> (match h with | T term -> if term = first then match_list rules t last else None
-												| N non -> let finished = make_matcher (non,rules) frag in (match finished with None -> None | Some x -> match_list rules t x))
+		match list with | h::t -> (match h with | T term -> if term = first then match_list rules t acc last else None
+												| N non -> let finished = make_matcher (non,rules) acc frag in (match finished with None -> None | Some x -> match_list rules t acc x))
 						| [] -> Some frag)
-		| [] -> match list with [] -> Some[] | _ -> None
+		| [] -> (match list with [] -> Some [] | _ -> None)
 
 
 
 
-let make_parser x =
-  x
+let rec make_parser gram frag = 
+	match gram with e,f -> let res = parse_opts f (f e) frag in match res with None -> None | Some x -> Some (Node (e,x))
+
+and parse_opts rules li frag = 
+	match li with [] -> None
+			| a::b -> let cv = match_list rules a frag in (match cv with None -> parse_opts rules b frag | Some x -> Some x)
+
+and match_list rules list frag = 
+	match frag with 
+		| first::last -> ( match list with h::t -> (match h with | T term -> if term = first then let va = (match_list rules t last) in match va with | None -> None | Some x -> Some ((Leaf term)::x) else None
+																| N node -> let finish = make_parser (node,rules) frag in (match finish with None -> None | Some x -> match_list rules t last)
+															)
+										| [] -> None
+									)
+		| [] -> (match list with [] -> Some [] | _ -> None )
+
