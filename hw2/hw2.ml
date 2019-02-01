@@ -6,47 +6,6 @@ type ('nonterminal, 'terminal) parse_tree =
   | Node of 'nonterminal * ('nonterminal, 'terminal) parse_tree list
   | Leaf of 'terminal
 
-let accept_all string = Some string
-let accept_empty_suffix = function
-   | _::_ -> None
-   | x -> Some x
-
-
-
-(* An example grammar for a small subset of Awk.
-   This grammar is not the same as Homework 1; it is
-   instead the same as the grammar under
-   "Theoretical background" above.  *)
-
-type awksub_nonterminals =
-  | Expr | Term | Lvalue | Incrop | Binop | Num
-
-let awkish_grammar =
-  (Expr,
-   function
-     | Expr ->
-         [[N Term; N Binop; N Expr];
-          [N Term]]
-     | Term ->
-	 [[N Num];
-	  [N Lvalue];
-	  [N Incrop; N Lvalue];
-	  [N Lvalue; N Incrop];
-	  [T"("; N Expr; T")"]]
-     | Lvalue ->
-	 [[T"$"; N Expr]]
-     | Incrop ->
-	 [[T"++"];
-	  [T"--"]]
-     | Binop ->
-	 [[T"+"];
-	  [T"-"]]
-     | Num ->
-	 [[T"0"]; [T"1"]; [T"2"]; [T"3"]; [T"4"];
-	  [T"5"]; [T"6"]; [T"7"]; [T"8"]; [T"9"]])
-
-
-
 (* Given a type (expr) and rules (gram) this function returns a list of the grammars *)
 let rec convert_grammar_compile_type expr gram = 
   match gram with 
@@ -72,23 +31,25 @@ let rec parse_tree_leaves tree =
                                             | Node (no,br) -> (parse_tree_leaves (Node(no,br)))@(helper t)) in helper c
 
 
-let rec make_matcher gram acc frag = 
-	match gram with e,f -> let tail = match_sub f (f e) acc frag in tail
+let rec make_match_run gram acc frag top = 
+	match gram with e,f -> let tail = match_sub f (f e) acc frag top in tail
 
-and match_sub rules li acc frag = 
+and match_sub rules li acc frag top = 
 	match li with a::b -> let cv = match_list rules a acc frag in (match cv with 
-                                                                | None -> match_sub rules b acc frag 
-                                                                | Some x -> (match acc x with Some x -> Some x | None -> match_sub rules b acc frag ))
+                                                                | None -> match_sub rules b acc frag top
+                                                                | Some x -> (if top then match acc x with Some x -> Some x | None -> match_sub rules b acc frag top else Some x))
 				| [] -> None
 
 and match_list rules list acc frag =
 	match frag with 
 		| first::last -> (
 		match list with | h::t -> (match h with | T term -> if term = first then match_list rules t acc last else None
-												| N non -> let finished = make_matcher (non,rules) acc frag in (match finished with None -> None | Some x -> match_list rules t acc x))
+												| N non -> let finished = make_match_run (non,rules) acc frag false in (match finished with None -> None | Some x -> match_list rules t acc x))
 						| [] -> Some frag)
 		| [] -> (match list with [] -> Some [] | _ -> None)
 
+let make_matcher gram acc frag =
+make_match_run gram acc frag true
 
 
 let rec make_runner gram frag = 
@@ -105,12 +66,10 @@ and match_final rules list frag =
 															)
 										| [] -> Some ([],frag)
 									)
-		| [] -> (match list with [] -> Some ([],[]) | _ -> None )
-
-;;
+		| [] -> (match list with [] -> Some ([],[]) | _ -> None );;
 
 let make_parser gram frag =
-let res = make_runner gram frag in
-match res with
-| None -> None
-| Some (x,y) -> (match y with [] -> Some x | _ -> None)
+  let res = make_runner gram frag in
+  match res with
+  | None -> None
+  | Some (x,y) -> (match y with [] -> Some x | _ -> None)

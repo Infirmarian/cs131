@@ -1,0 +1,56 @@
+The functions for both make_matcher and make_parser follow a similar
+functionality. Both have a three-level recursive pattern, where the top level
+matches with the grammar and extracts the matching function along with the
+initial value for the grammar. From there, the next level of recursion is
+called, which goes through each of the options of the matched grammar. For
+each of those subrules, a final recursive function is called, which examines
+each element of the fragment, as well as each element of the specific rule.
+If a terminal leaf is discovered, then that value is dealt with, and if a
+non-terminal is found, then that value is paired with the remaining fragment
+and the grammar rules and is sent back to the top level call. In this way, the
+three subfunctions act in an order, where the fragment trickles down through
+the layers. In this way, I based the code for make_parser off that of
+make_matcher, as this was first function that I wrote. Both follow a similar
+traversal of the grammar, and only differ in that make_parser builds up a
+tree from the fragments it visits, while make_matcher only destructs the
+fragment list, and returns whatever is unmatched (if the acceptor allows it).
+
+This solution I created has several weaknesses. While make_matcher works on
+most test cases, test4 in the provided sanity check fails. Rather than
+returning Some [], the case returns Some followed by a portion of the fragment
+remaining, meaning somewhere there was an issue in the order of some rule
+checking. In addition, there are no checks on either make_matcher or
+make_parser for the quality of the grammar. For example, if a grammar is
+provided where the initial rule (or any rule) has a recursive relationship
+with itself as the first option, then the make_matcher and make_parser will
+dive in and create an endless loop as they go after the first node they match.
+Because of this restriction, all grammars that are passed into the function
+must be formatted such that their first value isn't an endless loop. Another
+weakness, although one not related to performance, is the formatting of the
+code in the two main functions. Because there are many nested calls to match
+and set variables, certain lines are quite messy and difficult to read, with
+one such line exceeding 250 chars across. By cleaning and formatting the
+code better, I could improve readability and the ability to understand and
+debug the solutions. In addition, my program has a distinct lack of comments,
+which also make it more difficult to understand what most functions are
+attempting to accomplish.
+
+My tests cases attempt to build a fairly complex grammar, imitating that
+(in a much more basic form) of the English grammar. As such, I am able to
+create basic sentences which can be parsed and matched successfully by my
+program. One case I attempted to test with was a large grammar at all levels.
+For example, there are 9 nonterminal types in my grammar, along with between
+2 - 6 possibilities for each rule. The top level is also recursive, allowing
+"sentences" to be conjugated with words like "and" and "while".
+
+One major difficulty with this project was the lack of a suitable debugger.
+While OCaml provides a method to trace functions, and the ocamldebugger exists
+for compiled OCaml binaries, both were quite difficult to use, and due to the
+fact that most of the functions and subfunctions used were curried, most of
+the data that the debug and trace provided was <poly>, which was not useful
+for inspecting individual values and the location in the program.
+
+In addition to documentation provided on by
+http://caml.inria.fr/pub/docs/manual-ocaml/, I also got reference and
+assistance at TA office hours, especially those of Kimmo Kaerkkaeinen and
+Tanmay Sardesai.
