@@ -1,21 +1,44 @@
+import java.util.concurrent.atomic.AtomicIntegerArray;
+
 public class GetNSet implements State{
     private byte[] value;
     private byte maxval;
+    private AtomicIntegerArray atomicValue;
 
-    // constructors
-    GetNSet(byte[] v) { value = v; maxval = 127; }
-    GetNSet(byte[] v, byte m) { value = v; maxval = m; }
+    GetNSet(byte[] v, byte m) {
+        setup(v,m);
+    }
+    GetNSet(byte[] v) {
+        setup(v, (byte)127);
+    }
+    private void setup(byte[] v, byte m){
+        int[] intv = new int[v.length];
+        for(int i = 0; i<v.length; i++){
+            intv[i] = v[i];
+        }
+        // create the atomic integer array
+        atomicValue = new AtomicIntegerArray(intv);
+        maxval = m;
+        value = v;
+    }
 
-    public int size() { return value.length; }
+    public int size() {
+        return atomicValue.length();
+    }
 
-    public byte[] current() { return value; }
-    
-    public synchronized boolean swap(int i, int j) {
-        if (value[i] <= 0 || value[j] >= maxval) {
+    public byte[] current() {
+        for (int i=0; i<atomicValue.length(); i++) {
+            value[i] = (byte)atomicValue.get(i);
+        }
+        return value;
+    }
+
+    public boolean swap(int i, int j) {
+        if (atomicValue.get(i) <= 0 || atomicValue.get(j) >= maxval) {
             return false;
         }
-        value[i]--;
-        value[j]++;
+        atomicValue.getAndAdd(i, -1);
+        atomicValue.getAndAdd(j, 1);
         return true;
     }
 

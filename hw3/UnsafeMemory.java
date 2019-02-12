@@ -21,6 +21,9 @@ class UnsafeMemory {
 			case "Unsynchronized":
 				s = new UnsynchronizedState(stateArg, maxval);
 				break;
+			case "GetNSet":
+				s = new GetNSet(stateArg, maxval);
+				break;
 			default:
 				throw new Exception(args[0]);
 		}
