@@ -24,6 +24,9 @@ class UnsafeMemory {
 			case "GetNSet":
 				s = new GetNSet(stateArg, maxval);
 				break;
+			case "BetterSafe":
+				s = new BetterSafe(stateArg, maxval);
+				break;
 			default:
 				throw new Exception(args[0]);
 		}

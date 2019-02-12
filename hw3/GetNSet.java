@@ -12,12 +12,11 @@ public class GetNSet implements State{
         setup(v, (byte)127);
     }
     private void setup(byte[] v, byte m){
-        int[] intv = new int[v.length];
-        for(int i = 0; i<v.length; i++){
-            intv[i] = v[i];
-        }
         // create the atomic integer array
-        atomicValue = new AtomicIntegerArray(intv);
+        atomicValue = new AtomicIntegerArray(v.length);
+        for(int i =0; i<v.length; i++){
+            atomicValue.set(i, v[i]);
+        }
         maxval = m;
         value = v;
     }
