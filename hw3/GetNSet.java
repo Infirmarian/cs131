@@ -33,11 +33,13 @@ public class GetNSet implements State{
     }
 
     public boolean swap(int i, int j) {
-        if (atomicValue.get(i) <= 0 || atomicValue.get(j) >= maxval) {
+        int ival = atomicValue.get(i);
+        int jval = atomicValue.get(j);
+        if (ival <= 0 || jval >= maxval) {
             return false;
         }
-        atomicValue.getAndAdd(i, -1);
-        atomicValue.getAndAdd(j, 1);
+        atomicValue.set(i, ival-1);
+        atomicValue.set(j, jval+1);
         return true;
     }
 

@@ -18,6 +18,23 @@ if [ $? -ne 0 ]; then
     echo "Failed to compile. See error message above"
 fi
 
+echo "############## NULL ################"
+for((i=0;i<$testcount;i++)); do
+    val=$(java UnsafeMemory Null $threads $iterations $maxval \
+     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
+     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
+     $((RANDOM % $maxval)) | grep -o -E "[0-9]+\.[0-9]+")
+     sum=$(echo $sum + $val | bc)
+     if [ $silent -eq 0 ]; then 
+        echo "$val" 
+     fi
+done
+avg=$(echo $sum / $testcount | bc)
+echo "TOTAL TESTS: $testcount"
+echo "AVERAGE NULL (Baseline times): $avg"
+echo "TOTAL TIME: $sum"
+
+sum=0
 echo "########### SYNCHRONIZED #############"
 for((i=0;i<$testcount;i++)); do
     val=$(java UnsafeMemory Synchronized $threads $iterations $maxval \
@@ -32,6 +49,7 @@ done
 avg=$(echo $sum / $testcount | bc)
 echo "TOTAL TESTS: $testcount"
 echo "AVERAGE SYNCHRONIZED: $avg"
+echo "TOTAL TIME: $sum"
 
 
 echo "########## UNSYNCHRONIZED ############"
@@ -45,7 +63,7 @@ for((i=0;i<$testcount;i++)); do
      | grep -o -E "[0-9]+\.[0-9]+" > temp.num 2>/dev/null &
      sleep $timeout
      if ps | grep -q "[j]ava UnsafeMemory"; then
-        kill $(ps | grep "[j]ava UnsafeMemory" | grep -o -E "^[0-9]{5}") 2>/dev/null
+        kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
         let "lowertest--"
      else
         val=$(<temp.num)
@@ -62,6 +80,7 @@ else
 fi
 echo "TOTAL TESTS: $lowertest"
 echo "AVERAGE UNSYNCHRONIZED: $avg"
+echo "TOTAL TIME: $sum"
 
 
 
@@ -76,7 +95,7 @@ for((i=0;i<$testcount;i++)); do
      | grep -o -E "[0-9]+\.[0-9]+" > temp.num 2>/dev/null &
      sleep $timeout
      if ps | grep -q "[j]ava UnsafeMemory"; then
-        kill $(ps | grep "[j]ava UnsafeMemory" | grep -o -E "^[0-9]{5}") 2>/dev/null
+        kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
         let "lowertest--"
      else
         val=$(<temp.num)
@@ -93,16 +112,19 @@ else
 fi
 echo "TOTAL TESTS: $lowertest"
 echo "AVERAGE GetNSet: $avg"
+echo "TOTAL TIME: $sum"
 
 
-
+sum=0
 echo "############ BetterSafe ##############"
 for((i=0;i<$testcount;i++)); do
     val=$(java UnsafeMemory BetterSafe $threads $iterations $maxval \
      $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
      $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
      $((RANDOM % $maxval)) | grep -o -E "[0-9]+\.[0-9]+")
-     sum=$(echo $sum + $val | bc)
+     echo $sum
+     echo $val
+     #sum=$(echo $sum + $val | bc)
      if [ $silent -eq 0 ]; then 
      echo "$val" 
      fi
@@ -110,6 +132,7 @@ done
 avg=$(echo $sum / $testcount | bc)
 echo "TOTAL TESTS: $testcount"
 echo "AVERAGE SYNCHRONIZED: $avg"
+echo "TOTAL TIME: $sum"
 
 
 # Cleanup
