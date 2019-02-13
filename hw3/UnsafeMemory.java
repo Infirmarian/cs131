@@ -69,7 +69,7 @@ class UnsafeMemory {
 	    t[i].join ();
 	long end = System.nanoTime();
 	double elapsed_ns = end - start;
-	System.out.format("Threads average %g ns/transition\n",
+	System.out.format("Threads average %.2f ns/transition\n",
 			  elapsed_ns * nThreads / nTransitions);
     }
 

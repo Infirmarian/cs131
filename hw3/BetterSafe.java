@@ -1,8 +1,4 @@
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.VarHandle;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicIntegerArray;
-
 
 public class BetterSafe implements State{
     private byte[] value;
@@ -52,13 +48,4 @@ public class BetterSafe implements State{
         } 
         return false;
     }   
-   /*
-    private class lockedBytes{
-        public byte b;
-        public ReentrantLock l;
-        public lockedBytes(byte b){
-            this.b = b;
-            l = new ReentrantLock();
-        }
-    }*/
 }

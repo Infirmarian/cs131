@@ -7,7 +7,7 @@ exit 1
 fi
 
 # Results are in the format
-# process,thread count,iteration count,array size,runtime, average runtime
+# process,thread count,iteration count,array size,succeded runs,total runs,total runtime, average runtime
 threads=$1
 iterations=$2
 maxval=64
@@ -76,8 +76,8 @@ for((i=0;i<$testcount;i++)); do
      2>/dev/null \
      | grep -o -E "[0-9]+\.[0-9]+" > temp.num &
      sleep $timeout
-     if ps | grep -q "[j]ava UnsafeMemory"; then
-        kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
+     if ps | grep -q "[j]ava"; then
+        kill $(ps | grep "[j]ava" | awk '{print $1}') 2>/dev/null
         let "lowertest--"
      else
         val=$(<temp.num)
@@ -92,7 +92,7 @@ if [ $lowertest -eq 0 ]; then
 else
     avg=$(echo $sum / $lowertest | bc)
 fi
-echo -n "$testcount,"
+echo -n "$lowertest,"
 echo -n "$testcount,"
 echo -n "$sum,"
 echo "$avg"
@@ -107,8 +107,8 @@ for((i=0;i<$testcount;i++)); do
      2>/dev/null \
      | grep -o -E "[0-9]+\.[0-9]+" > temp.num &
      sleep $timeout
-     if ps | grep -q "[j]ava UnsafeMemory"; then
-        kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
+     if ps | grep -q "[j]ava"; then
+        kill $(ps | grep "[j]ava" | awk '{print $1}') 2>/dev/null
         let "lowertest--"
      else
         val=$(<temp.num)
@@ -123,7 +123,7 @@ if [ $lowertest -eq 0 ]; then
 else
     avg=$(echo $sum / $lowertest | bc)
 fi
-echo -n "$testcount,"
+echo -n "$lowertest,"
 echo -n "$testcount,"
 echo -n "$sum,"
 echo "$avg"
