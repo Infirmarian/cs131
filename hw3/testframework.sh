@@ -4,8 +4,15 @@ threads=12
 iterations=100000
 maxval=64
 sum=0
-testcount=20
+testcount=10
 timeout=0.5
+array_size=100
+# Generate (a large number) of random digits
+count=1
+while [ "$count" -le $array_size ]; do
+ randarray[$count]=$(($RANDOM%$maxval))
+ let "count += 1"
+done
 
 if [ "$1" = "-s" ]; then
     silent=1
@@ -20,10 +27,8 @@ fi
 
 echo "############## NULL ################"
 for((i=0;i<$testcount;i++)); do
-    val=$(java UnsafeMemory Null $threads $iterations $maxval \
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) | grep -o -E "[0-9]+\.[0-9]+")
+    val=$(java UnsafeMemory Null $threads $iterations $maxval "${randarray[@]}" \
+    | grep -o -E "[0-9]+\.[0-9]+")
      sum=$(echo $sum + $val | bc)
      if [ $silent -eq 0 ]; then 
         echo "$val" 
@@ -37,10 +42,8 @@ echo "TOTAL TIME: $sum"
 sum=0
 echo "########### SYNCHRONIZED #############"
 for((i=0;i<$testcount;i++)); do
-    val=$(java UnsafeMemory Synchronized $threads $iterations $maxval \
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) | grep -o -E "[0-9]+\.[0-9]+")
+    val=$(java UnsafeMemory Synchronized $threads $iterations $maxval  "${randarray[@]}" \
+     | grep -o -E "[0-9]+\.[0-9]+")
      sum=$(echo $sum + $val | bc)
      if [ $silent -eq 0 ]; then 
      echo "$val" 
@@ -56,11 +59,9 @@ echo "########## UNSYNCHRONIZED ############"
 sum=0
 lowertest=$testcount
 for((i=0;i<$testcount;i++)); do
-     java UnsafeMemory Unsynchronized $threads $iterations $maxval \
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) 2>/dev/null \
-     | grep -o -E "[0-9]+\.[0-9]+" > temp.num 2>/dev/null &
+     java UnsafeMemory Unsynchronized $threads $iterations $maxval "${randarray[@]}" \
+     2>/dev/null \
+     | grep -o -E "[0-9]+\.[0-9]+" > temp.num &
      sleep $timeout
      if ps | grep -q "[j]ava UnsafeMemory"; then
         kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
@@ -88,11 +89,9 @@ echo "############# GetNSet ###############"
 sum=0
 lowertest=$testcount
 for((i=0;i<$testcount;i++)); do
-     java UnsafeMemory GetNSet $threads $iterations $maxval \
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) 2>/dev/null \
-     | grep -o -E "[0-9]+\.[0-9]+" > temp.num 2>/dev/null &
+     java UnsafeMemory GetNSet $threads $iterations $maxval "${randarray[@]}" \
+     2>/dev/null \
+     | grep -o -E "[0-9]+\.[0-9]+" > temp.num &
      sleep $timeout
      if ps | grep -q "[j]ava UnsafeMemory"; then
         kill $(ps | grep "[j]ava UnsafeMemory" | awk '{print $1}') 2>/dev/null
@@ -118,20 +117,16 @@ echo "TOTAL TIME: $sum"
 sum=0
 echo "############ BetterSafe ##############"
 for((i=0;i<$testcount;i++)); do
-    val=$(java UnsafeMemory BetterSafe $threads $iterations $maxval \
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) $((RANDOM % $maxval)) $((RANDOM % $maxval))\
-     $((RANDOM % $maxval)) | grep -o -E "[0-9]+\.[0-9]+")
-     echo $sum
-     echo $val
-     #sum=$(echo $sum + $val | bc)
+    val=$(java UnsafeMemory BetterSafe $threads $iterations $maxval  "${randarray[@]}" \
+     | grep -o -E "[0-9]+\.[0-9]+")
+     sum=$(echo $sum + $val | bc)
      if [ $silent -eq 0 ]; then 
      echo "$val" 
      fi
 done
 avg=$(echo $sum / $testcount | bc)
 echo "TOTAL TESTS: $testcount"
-echo "AVERAGE SYNCHRONIZED: $avg"
+echo "AVERAGE BetterSafe: $avg"
 echo "TOTAL TIME: $sum"
 
 
