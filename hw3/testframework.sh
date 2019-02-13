@@ -1,12 +1,22 @@
 #!/bin/bash
 # Variables. Change these to significantly modify the system
-threads=12
-iterations=100000
+
+if [ -z "$1" ]; then
+echo "Usage: ./testframework.sh threads iterations arraySize testCount [-s silent] [-nc don't recompile]"
+exit 1
+fi
+
+# Results are in the format
+# process,thread count,iteration count,array size,runtime, average runtime
+threads=$1
+iterations=$2
 maxval=64
 sum=0
-testcount=10
+testcount=$4
 timeout=0.5
-array_size=100
+array_size=$3
+
+
 # Generate (a large number) of random digits
 count=1
 while [ "$count" -le $array_size ]; do
@@ -14,18 +24,19 @@ while [ "$count" -le $array_size ]; do
  let "count += 1"
 done
 
-if [ "$1" = "-s" ]; then
+if [ "$5" = "-s" ]; then
     silent=1
 else
     silent=0
 fi
-
-javac UnsafeMemory.java
-if [ $? -ne 0 ]; then
-    echo "Failed to compile. See error message above"
+if [ "$6" != "-nc" ]; then
+    javac UnsafeMemory.java
+    if [ $? -ne 0 ]; then
+        echo "Failed to compile. See error message above"
+    fi
 fi
 
-echo "############## NULL ################"
+echo -n "Null,$threads,$iterations,$array_size,"
 for((i=0;i<$testcount;i++)); do
     val=$(java UnsafeMemory Null $threads $iterations $maxval "${randarray[@]}" \
     | grep -o -E "[0-9]+\.[0-9]+")
@@ -34,13 +45,14 @@ for((i=0;i<$testcount;i++)); do
         echo "$val" 
      fi
 done
+echo -n "$testcount,"
+echo -n "$testcount,"
+echo -n "$sum,"
 avg=$(echo $sum / $testcount | bc)
-echo "TOTAL TESTS: $testcount"
-echo "AVERAGE NULL (Baseline times): $avg"
-echo "TOTAL TIME: $sum"
+echo "$avg"
 
 sum=0
-echo "########### SYNCHRONIZED #############"
+echo -n "Synchronized,$threads,$iterations,$array_size,"
 for((i=0;i<$testcount;i++)); do
     val=$(java UnsafeMemory Synchronized $threads $iterations $maxval  "${randarray[@]}" \
      | grep -o -E "[0-9]+\.[0-9]+")
@@ -49,13 +61,14 @@ for((i=0;i<$testcount;i++)); do
      echo "$val" 
      fi
 done
+echo -n "$testcount,"
+echo -n "$testcount,"
+echo -n "$sum,"
 avg=$(echo $sum / $testcount | bc)
-echo "TOTAL TESTS: $testcount"
-echo "AVERAGE SYNCHRONIZED: $avg"
-echo "TOTAL TIME: $sum"
+echo "$avg"
 
 
-echo "########## UNSYNCHRONIZED ############"
+echo -n "Unsynchronized,$threads,$iterations,$array_size,"
 sum=0
 lowertest=$testcount
 for((i=0;i<$testcount;i++)); do
@@ -79,13 +92,14 @@ if [ $lowertest -eq 0 ]; then
 else
     avg=$(echo $sum / $lowertest | bc)
 fi
-echo "TOTAL TESTS: $lowertest"
-echo "AVERAGE UNSYNCHRONIZED: $avg"
-echo "TOTAL TIME: $sum"
+echo -n "$testcount,"
+echo -n "$testcount,"
+echo -n "$sum,"
+echo "$avg"
 
 
 
-echo "############# GetNSet ###############"
+echo -n "GetNSet,$threads,$iterations,$array_size,"
 sum=0
 lowertest=$testcount
 for((i=0;i<$testcount;i++)); do
@@ -109,13 +123,14 @@ if [ $lowertest -eq 0 ]; then
 else
     avg=$(echo $sum / $lowertest | bc)
 fi
-echo "TOTAL TESTS: $lowertest"
-echo "AVERAGE GetNSet: $avg"
-echo "TOTAL TIME: $sum"
+echo -n "$testcount,"
+echo -n "$testcount,"
+echo -n "$sum,"
+echo "$avg"
 
 
 sum=0
-echo "############ BetterSafe ##############"
+echo -n "BetterSafe,$threads,$iterations,$array_size,"
 for((i=0;i<$testcount;i++)); do
     val=$(java UnsafeMemory BetterSafe $threads $iterations $maxval  "${randarray[@]}" \
      | grep -o -E "[0-9]+\.[0-9]+")
@@ -125,9 +140,10 @@ for((i=0;i<$testcount;i++)); do
      fi
 done
 avg=$(echo $sum / $testcount | bc)
-echo "TOTAL TESTS: $testcount"
-echo "AVERAGE BetterSafe: $avg"
-echo "TOTAL TIME: $sum"
+echo -n "$testcount,"
+echo -n "$testcount,"
+echo -n "$sum,"
+echo "$avg"
 
 
 # Cleanup
