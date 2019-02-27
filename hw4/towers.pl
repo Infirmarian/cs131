@@ -32,7 +32,6 @@ fd_countTowersVisible([H|T], N, Current) :- Current #< H, fd_countTowersVisible(
 fd_countTowersVisible([H|T], N, Current) :- Current #>= H, fd_countTowersVisible(T, N2, Current), N #= N2.
 
 
-
 %base (trivial) case for a tower
 plain_tower(0, [], counts([],[],[],[])) :- !.
 plain_tower(N,T,counts(Top, Bottom, Left, Right)) :- 
@@ -81,3 +80,8 @@ countTowersVisible([], 0, _):-!.
 countTowersVisible([H|T], N, Current) :- H =< Current, countTowersVisible(T, N2, Current), N = N2, !.
 countTowersVisible([H|T], N, Current) :- H > Current, countTowersVisible(T, N2, H), N is N2 + 1, !.
 
+% CPU Time Comparison Statistics
+speedup(T) :- statistics(cpu_time, _), tower(5, _, counts([3,2,1,5,2], [2,2,4,1,2],[3,2,2,1,3],[2,3,1,3,2])), statistics(cpu_time, [_,FDSolver]), 
+            plain_tower(5, _, counts([3,2,1,5,2], [2,2,4,1,2],[3,2,2,1,3],[2,3,1,3,2])), statistics(cpu_time, [_,PlainSolver]), T is PlainSolver/FDSolver, !.
+
+ambiguous(N, C, T1, T2) :- tower(N, T1, C), tower(N, T2, C), T2 \== T1.

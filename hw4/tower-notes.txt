@@ -1,0 +1,35 @@
+The towers program utilizes Prolog to
+solve the Towers game from Simon Tatham's Portable Puzzle Collection.
+
+There are 4 user-intended functions defined:
+    tower/3
+        - Takes in a number N, board T, and edge counts C, and produces a puzzle solution
+    plain_tower/3
+        - Same operations as tower/3, but without using gnu prolog's finite domain solver
+        feature, meaning that operations are slower
+    speedup/1
+        - Compares the performance of tower/3 and plain_tower/3 with a sample puzzle
+    ambiguous/4
+        - Takes a number N, edge counts C and boards T1 and T2 and identifies if T1 and T2
+        are ambiguous puzzles (eg multiple valid solutions).
+
+For my speedup/1, I used the puzzle from 
+https://www.chiark.greenend.org.uk/~sgtatham/puzzles/js/towers.html#5de#489458191762545
+with edge counts provided to both tower/3 and plain_tower/3. In running comparisons in an ad hoc
+fashion, it was found that plain_tower/3 is faster when only N is provided, but in the case where
+either T or C is provided, tower/3 is on the order of 143 times faster than plain_tower/3
+
+The results of calling ambiguous(5, C, T1, T2) are below, with T1 and T2 formatted
+to be more readable. There are other ambiguous puzzles of size 5, but this was the first found.
+C = counts([4,3,3,2,1],[1,2,2,4,3],[5,4,2,2,1],[1,2,3,2,3])
+T1 =[[1,2,3,4,5],
+    [2,3,4,5,1],
+    [4,5,1,3,2],
+    [3,1,5,2,4],
+    [5,4,2,1,3]]
+
+T2 =[[1,2,3,4,5],
+    [2,3,4,5,1],
+    [4,1,5,3,2],
+    [3,5,1,2,4],
+    [5,4,2,1,3]]
