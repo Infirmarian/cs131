@@ -1,6 +1,13 @@
-
+# MacOS files
+.DS_Store
 # Homework 2
 sanity.ml
+*.zip
 
 # Homework 3
 *.class
+.vscode/
+
+# Homework 5
+*~
+compiled/
