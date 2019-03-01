@@ -43,3 +43,19 @@
 (display "24 ") (equal? (expr-compare '((lambda (a) (eq? a ((λ (a b) ((λ (a b) (a b)) b a)) a (lambda (a) a)))) (lambda (b a) (b a)))
                                       '((λ (a) (eqv? a ((lambda (b a) ((lambda (a b) (a b)) b a)) a (λ (b) a)))) (lambda (a b) (a b))))
                         '((λ (a) ((if % eq? eqv?) a ((λ (a!b b!a) ((λ (a b) (a b)) (if % b!a a!b) (if % a!b b!a))) a (λ (a!b) (if % a!b a))))) (lambda (b!a a!b) (b!a a!b)))) ;24
+(display "25 ") (equal? (expr-compare '(lambda (a b) a) '(lambda (a) a))
+                        '(if % (lambda (a b) a) (lambda (a) a)));25
+(display "26 ") (equal? (expr-compare '(lambda (a b) a) '(lambda (a . b) a)) 
+                        '(if % (lambda (a b) a) (lambda (a . b) a)));26
+(display "27 ") (equal? (expr-compare '(lambda a a) '(lambda (a) a))
+                        '(if % (lambda a a) (lambda (a) a)));27
+(display "28 ") (equal? (expr-compare '(lambda a a) '(lambda b b))
+                        '(lambda a!b a!b));28
+(display "29 ") (equal? (expr-compare '(lambda (a b) a) '(lambda (a b) b))
+                        '(lambda (a b) (if % a b)));29
+(display "30 ") (equal? (expr-compare '(lambda (a b) (a b c)) '(lambda (a b) (c b a)))
+                        '(lambda (a b) ((if % a c) b (if % c a))));30
+(display "31 ") (equal? (expr-compare '(lambda (a b) (a b c)) '(lambda (a b) a))
+                        '(lambda (a b) (if % (a b c) a))); 31
+(display "32 ") (equal? (expr-compare '(lambda (a b) (b a)) '(lambda (b a) (a b)))
+                       '(lambda (a!b b!a) (b!a a!b)));32

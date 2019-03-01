@@ -13,8 +13,7 @@
                  [(and (eq? 'list (car x)) (eq? 'list (car y))) (if (equal? x y) x `(if % ,x ,y))]
                  [(and (eq? 'quote (car x)) (eq? 'quote (car y))) (if (equal? x y) x `(if % ,x ,y))]
                  [(and (or (eq? 'if (car x)) (eq? 'if (car y))) (not (eq? (car x) (car y)))) `(if % ,x ,y)]
-                 [(and (lambda? (car x)) (lambda? (car y)))
-                  (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y)))) (expr-compare (cdddr x) (cdddr y)))]
+                 [(and (lambda? (car x)) (lambda? (car y))) (genlambda x y)]
                  [else (cons (expr-compare (car x) (car y)) (expr-compare (cdr x) (cdr y)))]
                  )
                ))]
@@ -23,6 +22,15 @@
     [(not (equal? x y)) `(if % ,x ,y)]
     [else #f])
   )
+(define (genlambda x y)
+  (cond
+    [(and (list? (cadr x)) (list? (cadr y)) (= (length (cadr x)) (length (cadr y))))
+       (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y)))) (expr-compare (cdddr x) (cdddr y)))]
+    [(and (not (pair? (cadr x))) (not (pair? (cadr y))) (not (list? (cadr x))) (not (list? (cadr y))))
+       (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (list (cadr x)) (list (cadr y)) (list(caddr x)) (list(caddr y))))) (expr-compare (cdddr x) (cdddr y)))]
+    ;[(and (pair? (cadr x)) (pair? (cadr y)) (not (list? (cadr x))) (not (list? (cadr y)))) (if (equal? (cadr x) (cadr y))
+    [else `(if % ,x ,y)]))
+  
 (define (lambdaParamsMap m x y)
   (cond 
   [(and (list? x) (list? y) (not (empty? x)) (not (empty? y))) (cons (lambdaParamsMap (car m) (car x) (car y)) (lambdaParamsMap (cdr m) (cdr x) (cdr y)))]
@@ -64,4 +72,12 @@
     )
   )
 (define (vlambda x y) (if (and (equal? x 'lambda) (equal? y 'lambda)) 'lambda (lambda)))
-       
+
+
+(define (test-expr-compare x y) (let ([diff (expr-compare x y)])
+                                  (and (equal? (evalpercent x diff #t) (evalpercent y diff #f)))))
+(define (evalpercent x diff tf) (equal? (eval x) (eval `(let ([% ,tf]) ,diff))))
+
+(define test-expr-x '(+ 3 ((lambda (a b) (- a b)) 1 2)))
+(define test-expr-y '(+ 2 ((lambda (a c) (- a c)) 1 2)))
+
