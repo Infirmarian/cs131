@@ -13,7 +13,8 @@
                  [(and (eq? 'list (car x)) (eq? 'list (car y))) (if (equal? x y) x `(if % ,x ,y))]
                  [(and (eq? 'quote (car x)) (eq? 'quote (car y))) (if (equal? x y) x `(if % ,x ,y))]
                  [(and (or (eq? 'if (car x)) (eq? 'if (car y))) (not (eq? (car x) (car y)))) `(if % ,x ,y)]
-                 [(and (lambda? (car x)) (lambda? (car y))) (cons (car y) (cons (lambdaParams (cadr x) (cadr y)) (cons (newcmp (cadr x) (cadr y) (caddr x) (caddr y)) (expr-compare (cdddr x) (cdddr y)))))]
+                 [(and (lambda? (car x)) (lambda? (car y)))
+                  (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y)))) (expr-compare (cdddr x) (cdddr y)))]
                  [else (cons (expr-compare (car x) (car y)) (expr-compare (cdr x) (cdr y)))]
                  )
                ))]
@@ -35,8 +36,9 @@
     [else (if (equal? x y) x (orsymbol x y))]))
 
 (define (newcmp a1 a2 v1 v2)
-  (let ([p1 (lambdaParamsMap a1 a1 a2)]) (let ([p2 (lambdaParamsMap a2 a1 a2)])
-    (expr-compare (replacevalues p1 v1) (replacevalues p2 v2)))))
+  (let ([p1 (lambdaParamsMap a1 a1 a2)] [p2 (lambdaParamsMap a2 a1 a2)])
+    (let ([res (expr-compare (replacevalues p1 v1) (replacevalues p2 v2))])
+      (if (= 1 (length res)) res (list res)))))
 
 (define (replacevalues map v)
   (cond
@@ -61,5 +63,5 @@
     [else #f]
     )
   )
-
+(define (vlambda x y) (if (and (equal? x 'lambda) (equal? y 'lambda)) 'lambda (lambda)))
        
