@@ -59,3 +59,5 @@
                         '(lambda (a b) (if % (a b c) a))); 31
 (display "32 ") (equal? (expr-compare '(lambda (a b) (b a)) '(lambda (b a) (a b)))
                        '(lambda (a!b b!a) (b!a a!b)));32
+(display "33 ") (equal? (expr-compare '(lambda (a . b) a) '(lambda (a . b) a))
+                       '(lambda (a . b) a));33

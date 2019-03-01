@@ -25,10 +25,10 @@
 (define (genlambda x y)
   (cond
     [(and (list? (cadr x)) (list? (cadr y)) (= (length (cadr x)) (length (cadr y))))
-       (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y)))) (expr-compare (cdddr x) (cdddr y)))]
+       (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y))))]
     [(and (not (pair? (cadr x))) (not (pair? (cadr y))) (not (list? (cadr x))) (not (list? (cadr y))))
-       (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (list (cadr x)) (list (cadr y)) (list(caddr x)) (list(caddr y))))) (expr-compare (cdddr x) (cdddr y)))]
-    ;[(and (pair? (cadr x)) (pair? (cadr y)) (not (list? (cadr x))) (not (list? (cadr y)))) (if (equal? (cadr x) (cadr y))
+       (append (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (list (cadr x)) (list (cadr y)) (list(caddr x)) (list(caddr y))))))]
+    [(and (pair? (cadr x)) (pair? (cadr y)) (not (list? (cadr x))) (not (list? (cadr y)))) (cons (vlambda (car x) (car y)) (cons (lambdaParams (cadr x) (cadr y)) (newcmp (cadr x) (cadr y) (caddr x) (caddr y))))]
     [else `(if % ,x ,y)]))
   
 (define (lambdaParamsMap m x y)
@@ -36,23 +36,25 @@
   [(and (list? x) (list? y) (not (empty? x)) (not (empty? y))) (cons (lambdaParamsMap (car m) (car x) (car y)) (lambdaParamsMap (cdr m) (cdr x) (cdr y)))]
   [(empty? x) x]
   [(empty? y) y]
+  [(and (pair? x) (pair? y)) (cons (lambdaParamsMap (car m) (car x) (car y)) (list (lambdaParamsMap (cdr m) (cdr x) (cdr y))))]
   [else (if (equal? x y) (list m x) (list m (orsymbol x y)))]
   ))
 (define (lambdaParams x y)
   (cond
     [(and (list? x) (list? y) (not (empty? x)) (not (empty? y))) (cons (lambdaParams (car x) (car y)) (lambdaParams (cdr x) (cdr y)))]
+    [(and (pair? x) (pair? y)) (cons (lambdaParams (car x) (car y)) (lambdaParams (cdr x) (cdr y)))]
     [else (if (equal? x y) x (orsymbol x y))]))
 
 (define (newcmp a1 a2 v1 v2)
   (let ([p1 (lambdaParamsMap a1 a1 a2)] [p2 (lambdaParamsMap a2 a1 a2)])
     (let ([res (expr-compare (replacevalues p1 v1) (replacevalues p2 v2))])
-      (if (= 1 (length res)) res (list res)))))
+      (if (and (list? res) (= 1 (length res))) res (list res)))))
 
 (define (replacevalues map v)
   (cond
     [(empty? map) v]
     [(empty? v) v]
-    [(not (list? v)) (list (loopMap map v))]
+    [(not (list? v)) (loopMap map v)]
     [else (cons (loopMap map (car v)) (replacevalues map (cdr v)))]))
 
 (define (loopMap map v)
