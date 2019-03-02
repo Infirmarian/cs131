@@ -65,21 +65,24 @@
   (string->symbol (string-append (string-append (symbol->string x) "!") (symbol->string y))))
       
       
-(define (lambda) (string->symbol "\u03BB"))
+(define (lambda_str) (string->symbol "\u03BB"))
 (define (lambda? y)
   (cond
     [(equal? y 'lambda) #t]
-    [(equal? y (lambda)) #t]
+    [(equal? y (lambda_str)) #t]
     [else #f]
     )
   )
-(define (vlambda x y) (if (and (equal? x 'lambda) (equal? y 'lambda)) 'lambda (lambda)))
+(define (vlambda x y) (if (and (equal? x 'lambda) (equal? y 'lambda)) 'lambda (lambda_str)))
 
 
 (define (test-expr-compare x y) (let ([diff (expr-compare x y)])
                                   (and (equal? (evalpercent x diff #t) (evalpercent y diff #f)))))
 (define (evalpercent x diff tf) (equal? (eval x) (eval `(let ([% ,tf]) ,diff))))
 
-(define test-expr-x '(+ 3 ((lambda (a b) (- a b)) 1 2)))
-(define test-expr-y '(+ 2 ((lambda (a c) (- a c)) 1 2)))
+(define test-expr-x '(if (equal? '(quote (abc)) ''(abc))
+                         (+ 3 ((lambda (a b) (- a b)) 1 2))
+                         (if (= ((lambda (a . b) (* a b)) 5 10) 50) ((lambda a a) 'yes) ((lambda (a) (* a a)) 40))))
+
+(define test-expr-y '(if (equal? ''(abc) '(quote (abc))) (+ 3 ((λ (h i) (- h i)) ((lambda (d) (* d 11)) 6) 2)) '(Yay CS 131)))
 
