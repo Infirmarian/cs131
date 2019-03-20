@@ -25,7 +25,7 @@ connection_map = {
     "Welsh": ["Holiday"]
 }
 location_lists = {
-    "kiwi.cs.ucla.edu": {"gps": [34.068930, -118.445127], "skew":"+0.21233", "time":"1520023934.918964"}
+    #"kiwi.cs.ucla.edu": {"gps": [34.068930, -118.445127], "skew":"+0.21233", "time":"1520023934.918964"}
 }
 # Sets that are filled with UUIDs to identify when messages have been sent
 message_ids = set()
@@ -48,6 +48,7 @@ def main():
         exit(1)
     print(server_name)
     logging.basicConfig(format='[%(levelname)s] '+server_name+' %(asctime)s : %(message)s', filename=server_name+".log", level=logging.INFO)
+    logging.info("SERVER STARTUP")
     global api_key
     api_key = load_api_key()
     loop = asyncio.get_event_loop()
@@ -103,17 +104,18 @@ async def locate_client(client_message):
             writer.close()
             jdata = json.loads(data)
             if len(jdata) > 1:
-                return jdata
+                logging.info("Discovered desired client from server {}".format(name))
+                return data
         except:
             logging.error("Unable to communicate with server {} on port {}".format(name, port))
-    return {}
+    return json.dumps({"FOUND": False})
 
 async def fetch(session, url):
     async with session.get(url) as response:
         return await response.text()
 
 async def handle_request(reader, writer):
-    data = await reader.read(100)
+    data = await reader.read(200)
     now = time.time()
     message = data.decode()
     fwd_message = ""
@@ -136,32 +138,39 @@ async def handle_request(reader, writer):
             message_id = str(uuid.uuid4())
             message_ids.add(message_id)
             fwd_message = "CLIENTAT {name} {gps} {uuid} {skew} {time} {server}".format(
-                name=addr, gps=values[2], uuid=message_id, server=server_name, skew=time_print, time=sent_time)
-
+                name=addr, gps=values[2], uuid=message_id, skew=time_print, time=sent_time, server=server_name)
         elif values[0] == "WHATSAT":
             logging.info("Received WHATSAT query for {}".format(values[1]))
             if values[1] not in location_lists:
-                logging.warning("Location for {} is unknown by this server, attempting to locate")
-                info = await locate_client("WHICHCLIENT "+values[1])
+                logging.warning("Location for {} is unknown by this server, attempting to locate".format(values[1]))
+                sid = str(uuid.uuid4())
+                seek_ids.add(sid)
+                raw_info = await locate_client("WHICHCLIENT "+values[1]+" "+sid)
+                info = json.loads(raw_info)
                 if len(info) <= 1:
                     logging.error("No such client was found")
                     raise NotImplementedError
                 location_lists[values[1]] = info # Add the discovered client to this server
             info = location_lists[values[1]]
+            try:
+                radius = int(values[2])
+                count = int(values[3])
+            except:
+                raise NotImplementedError
             async with aiohttp.ClientSession() as session:
                 raw_result = await fetch(session, 
                 "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{long}&radius={rad}&key={key}".format(
                     lat = info["gps"][0],
                     long = info["gps"][1],
-                    rad = min(int(values[2]), 50)*1000, # Radius in meters
+                    rad = min(radius, 50)*1000, # Radius in meters
                     key = api_key
                 ))
                 data = json.loads(raw_result)
                 if data["status"] == "OK":
                     logging.info("Successfully got location data about "+values[1])
                 else:
-                    logging.error("An error occurred with the API")
-                data["results"] = data["results"][:int(values[3])]
+                    logging.error("An error occurred with the API: {}".format(data["status"]))
+                data["results"] = data["results"][:count]
                 result = "AT {server} {skew} {loc} {lat}{long} {time}\n".format(
                     server = server_name, skew = info["skew"], loc = values[1], lat = ("+" if info["gps"][0] >= 0 else "") + str(info["gps"][0]),
                     long = ("+" if info["gps"][1] >= 0 else "") + str(info["gps"][1]), time = info["time"] 
@@ -173,12 +182,14 @@ async def handle_request(reader, writer):
                 logging.warning("Duplicate location update received from server {}".format(values[4]))
                 result = "0"
             else:
-                location_lists[values[1]] = gps_split(values[2])
-                message_ids.add({"gps": values[3], "skew": values[4], "time":values[5]})
+                # "CLIENTAT {name} {gps} {uuid} {skew} {time} {server}"
+                location_lists[values[1]] = {"gps": gps_split(values[2]), "skew":values[4], "time":values[5]}
+                message_ids.add(values[3])
                 logging.info("Received a location update from server {} on client {}".format(values[6], values[1]))
                 message = message[:message.rfind(" ")]+" "+server_name
                 await propagate_server_message(message)
                 result = "1"
+        
         elif values[0] == "WHICHCLIENT":
             if values[1] in location_lists:
                 result = json.dumps(location_lists[values[1]])
@@ -186,7 +197,8 @@ async def handle_request(reader, writer):
                 if values[2] in seek_ids:
                     result = json.dumps({"FOUND":False})
                 else:
-                    result = locate_client(message)
+                    seek_ids.add(values[2])
+                    result = await locate_client(message)
         else:
             raise NotImplementedError
     except NotImplementedError:
