@@ -122,6 +122,8 @@ async def handle_request(reader, writer):
     values = message.strip("\n").split(" ")
     try:
         if values[0] == "IAMAT":
+            if(len(values) > 4):
+                raise NotImplementedError
             addr = values[1]
             gps = gps_split(values[2])
             sent_time = float(values[3])
@@ -140,6 +142,8 @@ async def handle_request(reader, writer):
             fwd_message = "CLIENTAT {name} {gps} {uuid} {skew} {time} {server}".format(
                 name=addr, gps=values[2], uuid=message_id, skew=time_print, time=sent_time, server=server_name)
         elif values[0] == "WHATSAT":
+            if len(values) > 4:
+                raise NotImplementedError
             logging.info("Received WHATSAT query for {}".format(values[1]))
             if values[1] not in location_lists:
                 logging.warning("Location for {} is unknown by this server, attempting to locate".format(values[1]))
@@ -175,7 +179,7 @@ async def handle_request(reader, writer):
                     server = server_name, skew = info["skew"], loc = values[1], lat = ("+" if info["gps"][0] >= 0 else "") + str(info["gps"][0]),
                     long = ("+" if info["gps"][1] >= 0 else "") + str(info["gps"][1]), time = info["time"] 
                 )
-                result += json.dumps(data, indent=4, separators=(',', ': ')) +"\n"
+                result += json.dumps(data, indent=4, separators=(',', ': ')) +"\n\n"
         
         elif values[0] == "CLIENTAT":
             if values[3] in message_ids:
