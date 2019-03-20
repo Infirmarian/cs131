@@ -48,7 +48,7 @@ def main():
         exit(1)
     print(server_name)
     logging.basicConfig(format='[%(levelname)s] '+server_name+' %(asctime)s : %(message)s', filename=server_name+".log", level=logging.INFO)
-    logging.info("SERVER STARTUP")
+    logging.info("################### SERVER STARTUP ###################")
     global api_key
     api_key = load_api_key()
     loop = asyncio.get_event_loop()
@@ -121,6 +121,8 @@ async def handle_request(reader, writer):
     fwd_message = ""
     values = message.strip("\n").split(" ")
     try:
+        if len(values) == 0:
+            raise NotImplementedError
         if values[0] == "IAMAT":
             if(len(values) > 4):
                 raise NotImplementedError
@@ -211,6 +213,10 @@ async def handle_request(reader, writer):
     except NotImplementedError:
         logging.error("Unknown argument provided")
         result = "? "+message
+    except Exception as e:
+        logging.error("Error occurred: {}".format(e))
+        result = "? "+message
+
     encoded = result.encode("utf-8")
 
     writer.write(encoded)
