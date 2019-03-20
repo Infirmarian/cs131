@@ -25,9 +25,11 @@ connection_map = {
     "Welsh": ["Holiday"]
 }
 location_lists = {
-    "kiwi.cs.ucla.edu": [34.068930, -118.445127]
+    "kiwi.cs.ucla.edu": {"gps": [34.068930, -118.445127], "skew":"+0.21233", "time":"1520023934.918964"}
 }
+# Sets that are filled with UUIDs to identify when messages have been sent
 message_ids = set()
+seek_ids = set()
 
 def load_api_key():
     with open("api.txt", "r") as f:
@@ -81,13 +83,30 @@ async def propagate_server_message(msg):
     for name in others:
         port = port_map[name]
         try:
-            reader, writer = await asyncio.open_connection('127.0.0.1', port)
+            _, writer = await asyncio.open_connection('127.0.0.1', port)
             writer.write(msg.encode("utf-8"))
             await writer.drain()
             writer.close()
             logging.info("Forwarded client {} info to server {} on port {}".format(values[1], name, port))
         except:
             logging.error("Unable to communicate with server {} on port {}".format(name, port))
+
+async def locate_client(client_message):
+    others = connection_map[server_name]
+    for name in others:
+        port = port_map[name]
+        try:
+            reader, writer = await asyncio.open_connection('127.0.0.1', port)
+            writer.write(client_message.encode("utf-8"))
+            await writer.drain()
+            data = await reader.read(100)
+            writer.close()
+            jdata = json.loads(data)
+            if len(jdata) > 1:
+                return jdata
+        except:
+            logging.error("Unable to communicate with server {} on port {}".format(name, port))
+    return {}
 
 async def fetch(session, url):
     async with session.get(url) as response:
@@ -110,25 +129,30 @@ async def handle_request(reader, writer):
             addr=addr, gps=values[2], time=sent_time)
 
             # Store the name and location into the server
-            location_lists[addr] = gps
+            location_lists[addr] = {"gps" : gps, "skew":time_print, "time":sent_time}
             logging.info("IAMAT message from {}".format(addr))
 
             # Propagate information to other servers
             message_id = str(uuid.uuid4())
             message_ids.add(message_id)
-            fwd_message = "CLIENTAT {name} {gps} {uuid} {server}".format(name=addr, gps=values[2], uuid=message_id, server=server_name)
+            fwd_message = "CLIENTAT {name} {gps} {uuid} {skew} {time} {server}".format(
+                name=addr, gps=values[2], uuid=message_id, server=server_name, skew=time_print, time=sent_time)
 
         elif values[0] == "WHATSAT":
             logging.info("Received WHATSAT query for {}".format(values[1]))
             if values[1] not in location_lists:
-                logging.warning("Location for {} is unknown by this server")
-            latitude = location_lists[values[1]][0]
-            longitude = location_lists[values[1]][1]
+                logging.warning("Location for {} is unknown by this server, attempting to locate")
+                info = await locate_client("WHICHCLIENT "+values[1])
+                if len(info) <= 1:
+                    logging.error("No such client was found")
+                    raise NotImplementedError
+                location_lists[values[1]] = info # Add the discovered client to this server
+            info = location_lists[values[1]]
             async with aiohttp.ClientSession() as session:
                 raw_result = await fetch(session, 
                 "https://maps.googleapis.com/maps/api/place/nearbysearch/json?location={lat},{long}&radius={rad}&key={key}".format(
-                    lat = latitude,
-                    long = longitude,
+                    lat = info["gps"][0],
+                    long = info["gps"][1],
                     rad = min(int(values[2]), 50)*1000, # Radius in meters
                     key = api_key
                 ))
@@ -138,9 +162,9 @@ async def handle_request(reader, writer):
                 else:
                     logging.error("An error occurred with the API")
                 data["results"] = data["results"][:int(values[3])]
-                result = "AT {server} +0.263873386 {loc} {lat}{long} {time}\n".format(
-                    server = server_name, loc = values[1], lat = ("+" if latitude >= 0 else "") + str(latitude),
-                    long = ("+" if longitude >= 0 else "") + str(longitude), time = 1520023934.918963997 #TODO: fix this
+                result = "AT {server} {skew} {loc} {lat}{long} {time}\n".format(
+                    server = server_name, skew = info["skew"], loc = values[1], lat = ("+" if info["gps"][0] >= 0 else "") + str(info["gps"][0]),
+                    long = ("+" if info["gps"][1] >= 0 else "") + str(info["gps"][1]), time = info["time"] 
                 )
                 result += json.dumps(data, indent=4, separators=(',', ': ')) +"\n"
         
@@ -150,18 +174,23 @@ async def handle_request(reader, writer):
                 result = "0"
             else:
                 location_lists[values[1]] = gps_split(values[2])
-                message_ids.add(values[3])
-                logging.info("Received a location update from server {} on client {}".format(values[4], values[1]))
+                message_ids.add({"gps": values[3], "skew": values[4], "time":values[5]})
+                logging.info("Received a location update from server {} on client {}".format(values[6], values[1]))
                 message = message[:message.rfind(" ")]+" "+server_name
                 await propagate_server_message(message)
                 result = "1"
         elif values[0] == "WHICHCLIENT":
-            pass # TODO: seek a client if the results for WHATSAT couldn't be found
+            if values[1] in location_lists:
+                result = json.dumps(location_lists[values[1]])
+            else:
+                if values[2] in seek_ids:
+                    result = json.dumps({"FOUND":False})
+                else:
+                    result = locate_client(message)
         else:
-            raise Exception
-    except Exception as e:
+            raise NotImplementedError
+    except NotImplementedError:
         logging.error("Unknown argument provided")
-        print(e)
         result = "? "+message
     encoded = result.encode("utf-8")
 
