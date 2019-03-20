@@ -11,5 +11,5 @@ python3 connection_test.py
 
 
 # Kill the servers after test completion
-ps | grep "[s]erver.py" | awk {'print $1'} | xargs kill &>/dev/null
+ps | grep "\(python3\)\|\(server.py\)" | awk {'print $1'} | xargs kill &>/dev/null
 
