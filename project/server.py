@@ -125,8 +125,11 @@ async def handle_request(reader, writer):
             if(len(values) > 4):
                 raise NotImplementedError
             addr = values[1]
-            gps = gps_split(values[2])
-            sent_time = float(values[3])
+            try:
+                gps = gps_split(values[2])
+                sent_time = float(values[3])
+            except:
+                raise NotImplementedError
             time_diff = now - sent_time
             time_print = "+"+str(time_diff) if time_diff > 0 else str(time_diff)
             result = "AT {name} {time_diff} {addr} {gps} {time}\n".format(name=server_name, time_diff=time_print,
