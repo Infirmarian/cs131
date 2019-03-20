@@ -11,3 +11,7 @@ sanity.ml
 # Homework 5
 *~
 compiled/
+
+# Project
+api.txt
+*.log
