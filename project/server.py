@@ -46,7 +46,6 @@ def main():
     if server_name not in port_map:
         print("Error, unrecognized server name {} provided".format(server_name), file=sys.stderr)
         exit(1)
-    print(server_name)
     logging.basicConfig(format='[%(levelname)s] '+server_name+' %(asctime)s : %(message)s', filename=server_name+".log", level=logging.INFO)
     logging.info("################### SERVER STARTUP ###################")
     global api_key
@@ -55,13 +54,10 @@ def main():
     coro = asyncio.start_server(handle_request, '127.0.0.1', port_map[server_name], loop=loop)
     server = loop.run_until_complete(coro)
 
-    # Serve requests until Ctrl+C is pressed
-    print('Serving on {}'.format(server.sockets[0].getsockname()))
-
     try:
         loop.run_forever()
     except KeyboardInterrupt:
-        pass
+        logging.info("################### SERVER SHUTDOWN ###################")
 
     # Close the server
     server.close()
